@@ -46,7 +46,13 @@ class SynSemClassClassifierNN:
                 nbest=None,
                 threshold=None,
                 training_batches=0):
-        """Compiles the model."""
+        """Compiles the model.
+
+        Receives Input:
+            tf_test_dataset: tf.Dataset with a pair of (1.) tf.RaggedTensors of
+            shape [batch_size, sentence_length], containing the tokenizer
+            subword ids and (2.) gold labels.
+        """
         
         # 1. Input
         input_token_ids = tf.keras.Input(shape=(None,), dtype=tf.int32, ragged=True, name="input_token_ids")
@@ -110,7 +116,13 @@ class SynSemClassClassifierNN:
 
 
     def load_checkpoint(self, dirname):
-        """Loads model from directory."""
+        """Loads model from directory.
+
+        Loads checkpoint called "checkpoint" from directory "dirname".
+
+        Receives Input:
+            dirname: Path to directory (string).
+        """
 
         print("Loading fine-tuned cosine checkpoint from directory {}".format(dirname), file=sys.stderr, flush=True)
         self._model.load_weights("{}/checkpoint".format(dirname))
@@ -123,7 +135,7 @@ class SynSemClassClassifierNN:
         Saves checkpoint called "checkpoint" to directory "dirname".
         Recursively creates directory if "dirname" path does not exist.
 
-        Input:
+        Receives Input:
             dirname: Path to directory (string).
         """
 
@@ -149,7 +161,12 @@ class SynSemClassClassifierNN:
     def predict(self, tf_test_dataset, threshold=None, nbest=None):
         """Predicts test data classes.
 
-        Returns:
+        Receives Input:
+            tf_test_dataset: tf.Dataset with tf.RaggedTensors of shape
+            [batch_size, sentence_length], containing the tokenizer subword
+            ids.
+
+        Returns Output:
             For multilabel prediction (self._multilabel == True):
                 Python 2D array of examples x classes, with 1's for predicted
                 classes and 0's otherwise.
@@ -161,7 +178,7 @@ class SynSemClassClassifierNN:
                 Either threshold or nbest, but not both, must be given for
                 multilabel prediction (if self._multilabel == True), otherwise
                 ValueError is raised.
-                The classes positions catn be decoded with
+                The classes positions can be decoded with
                 sklearn.preprocessing.MultiLabelBinarizer().
             For 1-label prediction (self._multilabel == False):
                 Python 1D array of examples, each example labeled with exactly
@@ -201,11 +218,23 @@ class SynSemClassClassifierNN:
     def predict_values(self, tf_test_dataset):
         """Predicts test data classes probs/logits.
 
-        Returns:
+        Receives Input:
+            tf_test_dataset: tf.Dataset with tf.RaggedTensors of shape
+            [batch_size, sentence_length], containing the tokenizer subword
+            ids.
+
+        Returns Output:
             For multilabel prediction (self._multilabel == True):
-                Python 2D array of examples x classes, with values for each class.
+                Python 2D array of examples x classes, with values/probs for
+                each class (when sigmoid/softmax activation function was used,
+                respectively).
+                The classes positions can be decoded with
+                sklearn.preprocessing.MultiLabelBinarizer().
             1-label prediction (self._multilabel = False)
                 Python 2D array of examples x classes, with probs for each class.
+                The cardinals can be decoded with
+                sklearn.preprocessing.LabelEncoder().
+
         """
 
         return self._model.predict(tf_test_dataset)
