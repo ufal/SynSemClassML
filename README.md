@@ -39,12 +39,14 @@ venv/bin/pip3 install -r requirements.txt
 
 ## SynSemClass Prediction
 
-1. Download the fine-tuned BERT model (3,7G) for classification:
-
-TODO: upload the model
+1. The fine-tuned BERT model for classification of SynSemClass3.5 is available
+   at the [Artificial Intelligence Cluster (AIC)](https://aic.ufal.mff.cuni.cz/).
+   Please contact ``strakova@ufal.mff.cuni.cz`` for more information about the model.
 
 2. Predict the mention (lemmas) classes from context (sentences). The script
-   ``classifier.py`` shows examples how to load the fine-tuned BERT model
-   (``--load_model=<path_to_directory>``) and how to use the
-   ``SynSemClassClassifierNN`` class imported from
-   ``synsemclass_classifier_nn``.
+   ``example_predict.py`` shows how to load the fine-tuned BERT model
+   (``--load_model=<path_to_directory>``) for prediction.
+
+## SynSemClass Model Training
+
+The model can be fine-tuned from scratch with the ``classifier.py`` script.
