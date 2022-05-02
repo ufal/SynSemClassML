@@ -27,6 +27,7 @@ Example Usage:
     --column_x=sentence \
     --column_y=synsemclass_id \
     --dev=lemma_examples_dev.csv \
+    --multilabel \
     --train=lemma_examples_train.csv
 """
 
@@ -103,6 +104,8 @@ if __name__ == "__main__":
     tf.config.threading.set_inter_op_parallelism_threads(args.threads)
     tf.config.threading.set_intra_op_parallelism_threads(args.threads)
 
+    ### DATA PREPROCESSING ###
+
     # Read data
     if args.all_data:
         all_data = pd.read_csv(args.all_data)
@@ -129,11 +132,11 @@ if __name__ == "__main__":
         else:
             le.fit(all_data[args.column_y])
 
+    # Load the tokenizer
     print("Loading tokenizer {}".format(args.bert), file=sys.stderr, flush=True)
     tokenizer = transformers.AutoTokenizer.from_pretrained(args.bert)
 
-    model = synsemclass_classifier_nn.SynSemClassClassifierNN(multilabel=args.multilabel)
-    
+    # Create TF dataset as input to NN
     def create_dataset(data, size, shuffle=True):
         """Creates TensorFlow dataset."""
 
@@ -166,7 +169,28 @@ if __name__ == "__main__":
     if args.dev:
         tf_dev_dataset = create_dataset(dev, args.dev_size, shuffle=False)
 
-    model.compile(len(le.classes_),
+    ### TOKENIZER AND MODEL ###
+
+    model = synsemclass_classifier_nn.SynSemClassClassifierNN(multilabel=args.multilabel)
+
+    # Load model or fine-tune
+    if args.load_model:
+        with open("{}/args.pickle".format(args.load_model), "rb") as pickle_file:
+            model_training_args = pickle.load(pickle_file)
+        model.compile(len(le.classes_),
+                      bert=model_training_args.bert,
+                      decay=model_training_args.learning_rate_decay,
+                      dropout=model_training_args.dropout,
+                      epochs=model_training_args.epochs,
+                      focal_loss_gamma=model_training_args.focal_loss_gamma,
+                      learning_rate=model_training_args.learning_rate,
+                      multilabel_loss=model_training_args.multilabel_loss,
+                      nbest=model_training_args.multilabel_nbest,
+                      threshold=model_training_args.multilabel_threshold,
+                      training_batches=0)
+        model.load_checkpoint(args.load_model)
+    else:
+        model.compile(len(le.classes_),
                   bert=args.bert,
                   decay=args.learning_rate_decay,
                   dropout=args.dropout,
@@ -178,10 +202,6 @@ if __name__ == "__main__":
                   threshold=args.multilabel_threshold,
                   training_batches=len(tf_train_dataset) if args.train else 0)
 
-    # Load model or fine-tune
-    if args.load_model:
-        model.load_checkpoint(args.load_model)
-    else:
         model.train(tf_train_dataset, tf_dev_dataset=tf_dev_dataset, epochs=args.epochs, logdir=args.logdir)
 
     # Save the model
@@ -190,6 +210,8 @@ if __name__ == "__main__":
         model.save_checkpoint(path)
         with open("{}/classes.pickle".format(path), "wb") as pickle_file:
             pickle.dump(le, pickle_file)
+        with open("{}/args.pickle".format(path), "wb") as pickle_file:
+            pickle.dump(args, pickle_file)
 
     # Predict classes on development data
     if args.dev_predictions:
