@@ -24,14 +24,9 @@ class SynSemClassClassifierNN:
     """SynSemClass TensorFlow neural network for classification."""
 
 
-    def __init__(self, threads=1, seed=42, multilabel=False):
+    def __init__(self, multilabel=False):
         """Initializes the network."""
         
-        np.random.seed(seed)
-        tf.random.set_seed(seed)
-        tf.config.threading.set_inter_op_parallelism_threads(threads)
-        tf.config.threading.set_intra_op_parallelism_threads(threads)
-
         self._multilabel = multilabel
 
 

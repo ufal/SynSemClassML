@@ -37,6 +37,7 @@ import pickle
 import re
 import sys
 
+import numpy as np
 import sklearn.preprocessing
 import pandas as pd
 import tensorflow as tf
@@ -96,6 +97,12 @@ if __name__ == "__main__":
         print("Making logdir {}".format(args.logdir), file=sys.stderr, flush=True)
         os.mkdir(args.logdir)
 
+    # Set random seed and threads globally
+    np.random.seed(args.seed)
+    tf.random.set_seed(args.seed)
+    tf.config.threading.set_inter_op_parallelism_threads(args.threads)
+    tf.config.threading.set_intra_op_parallelism_threads(args.threads)
+
     # Read data
     if args.all_data:
         all_data = pd.read_csv(args.all_data)
@@ -125,9 +132,7 @@ if __name__ == "__main__":
     print("Loading tokenizer {}".format(args.bert), file=sys.stderr, flush=True)
     tokenizer = transformers.AutoTokenizer.from_pretrained(args.bert)
 
-    model = synsemclass_classifier_nn.SynSemClassClassifierNN(threads=args.threads,
-                                                              seed=args.seed,
-                                                              multilabel=args.multilabel)
+    model = synsemclass_classifier_nn.SynSemClassClassifierNN(multilabel=args.multilabel)
     
     def create_dataset(data, size, shuffle=True):
         """Creates TensorFlow dataset."""
