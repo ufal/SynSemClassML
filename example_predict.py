@@ -31,12 +31,11 @@ import synsemclass_classifier_nn
 
 if __name__ == "__main__":
     import argparse
-   
+
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch_size", default=10, type=int, help="Batch size.")
     parser.add_argument("--load_model", default=None, type=str, help="Load model from directory.")
-    parser.add_argument("--multilabel", default=False, action="store_true", help="Multilabel classification.")
     parser.add_argument("--multilabel_nbest", default=None, type=int, help="Take N best classes from multilabel class prediction (exclusive with --multilabel_threshold).")
     parser.add_argument("--multilabel_threshold", default=None, type=float, help="Threshold for multilabel class prediction (exclusive with --multilabel_nbest).")
     parser.add_argument("--threads", default=1, type=int, help="Maximum number of threads to use.")
@@ -56,20 +55,18 @@ if __name__ == "__main__":
 
     data = pd.read_csv(io.StringIO(TESTDATA_STR))
 
+    # Load model parameters
+    with open("{}/args.pickle".format(args.load_model), "rb") as pickle_file:
+            model_training_args = pickle.load(pickle_file)
+
     # Read target (synsemclass_id) strings to integers encoder/decoder.
-    if args.multilabel:
-        le = sklearn.preprocessing.MultiLabelBinarizer()
-    else:
-        le = sklearn.preprocessing.LabelEncoder()
     with open("{}/classes.pickle".format(args.load_model), "rb") as pickle_file:
         le = pickle.load(pickle_file)
 
     # Load the tokenizer
-    with open("{}/args.pickle".format(args.load_model), "rb") as pickle_file:
-            model_training_args = pickle.load(pickle_file)
     print("Loading tokenizer {}".format(model_training_args.bert), file=sys.stderr, flush=True)
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_training_args.bert)
-  
+
     # Create TF dataset as input to NN
     inputs = tokenizer(data["sentence"].tolist())["input_ids"] # drop masks
     inputs = tf.ragged.constant(inputs)
@@ -80,7 +77,7 @@ if __name__ == "__main__":
         tf.data.experimental.dense_to_ragged_batch(batch_size=args.batch_size))
 
     # Instantiate and compile the model
-    model = synsemclass_classifier_nn.SynSemClassClassifierNN(multilabel=args.multilabel)
+    model = synsemclass_classifier_nn.SynSemClassClassifierNN(multilabel=model_training_args.multilabel)
     model.compile(len(le.classes_),
               bert=model_training_args.bert,
               decay=model_training_args.learning_rate_decay,
@@ -97,9 +94,9 @@ if __name__ == "__main__":
     # Predict classes on development data
     predicted_classes = model.predict(tf_dataset, threshold=args.multilabel_threshold, nbest=args.multilabel_nbest)
     predicted_classes = le.inverse_transform(predicted_classes)
-    
+
     for i, row in data.iterrows():
-        if args.multilabel:
+        if model_training_args.multilabel:
             print("\t".join([",".join(predicted_classes[i]), row["sentence"]]))
         else:
             print("\t".join([predicted_classes[i], row["sentence"]]))
