@@ -1,5 +1,5 @@
 # Machine Learning for the SynSemClass project
-  
+
 This repository contains code for machine learning for the SynSemClass project.
 The mother project itself is described here:
 
@@ -7,10 +7,7 @@ https://ufal.mff.cuni.cz/synsemclass
 
 Recent versions of data published within the SynSemClass project include:
 
-- SynSemClass3.5 with Czech, English and German languages
-  (http://hdl.handle.net/11234/1-3750).
-
-Release of SynSemClass4.0 is currently work in progress.
+Urešová, Zdeňka; et al., 2022, SynSemClass 4.0, LINDAT/CLARIAH-CZ digital library at the Institute of Formal and Applied Linguistics (ÚFAL), Faculty of Mathematics and Physics, Charles University, http://hdl.handle.net/11234/1-4746.
 
 ## License (of the Code)
 
