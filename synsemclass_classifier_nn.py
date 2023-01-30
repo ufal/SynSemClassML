@@ -24,22 +24,15 @@ class SynSemClassClassifierNN:
     """SynSemClass TensorFlow neural network for classification."""
 
 
-    def __init__(self, multilabel=False):
+    def __init__(self, multilabel=False, checkpoint_filename="checkpoint.h5"):
         """Initializes the network."""
-        
+
         self._multilabel = multilabel
+        self._checkpoint_filename = checkpoint_filename
 
 
     def compile(self, output_layer_dim,
-                bert="bert-base-multilingual-uncased",
-                decay=False,
-                dropout=0,
-                epochs=10,
-                focal_loss_gamma=2.0,
-                learning_rate=1e-5,
-                multilabel_loss=None,
-                nbest=None,
-                threshold=None,
+                args,
                 training_batches=0):
         """Compiles the model.
 
@@ -48,23 +41,20 @@ class SynSemClassClassifierNN:
             shape [batch_size, sentence_length], containing the tokenizer
             subword ids and (2.) gold labels.
         """
-        
+
         # 1. Input
         input_token_ids = tf.keras.Input(shape=(None,), dtype=tf.int32, ragged=True, name="input_token_ids")
 
         # 2. BERT
-        bert = transformers.TFAutoModel.from_pretrained(bert)
+        bert = transformers.TFAutoModel.from_pretrained(args.bert)
         embeddings = bert(input_token_ids.to_tensor(), attention_mask=tf.sequence_mask(input_token_ids.row_lengths())).last_hidden_state[:,0]
 
         # 3. Dropout
-        dropout_layer = tf.keras.layers.Dropout(dropout)(embeddings)
+        dropout_layer = tf.keras.layers.Dropout(args.dropout)(embeddings)
 
         # 4. Output
-        if self._multilabel:
-            output_layer = tf.keras.layers.Dense(output_layer_dim, activation=multilabel_loss)(dropout_layer)
-        else:
-            output_layer = tf.keras.layers.Dense(output_layer_dim, activation="softmax")(dropout_layer)
-        
+        output_layer = tf.keras.layers.Dense(output_layer_dim, activation=args.loss)(dropout_layer)
+
         self._model = tf.keras.Model(inputs=input_token_ids, outputs=output_layer)
 
         class LinearWarmup(tf.optimizers.schedules.LearningRateSchedule):
@@ -85,49 +75,49 @@ class SynSemClassClassifierNN:
                 """Ensures at least one class is predicted before F1Score."""
 
                 def update_state(self, y_true, y_pred, sample_weight=None):
-                    _, largest = tf.math.top_k(y_pred, k=nbest or 1, sorted=False)
+                    _, largest = tf.math.top_k(y_pred, k=args.multilabel_nbest or 1, sorted=False)
                     y_pred += tf.math.reduce_sum(tf.one_hot(largest, output_layer_dim), axis=1)
                     return super().update_state(y_true, y_pred, sample_weight)
 
-            f1score = CustomF1Score(num_classes=output_layer_dim, average="micro", threshold=threshold or 1.0)
+            f1score = CustomF1Score(num_classes=output_layer_dim, average="micro", threshold=args.multilabel_threshold or 1.0)
 
-            if multilabel_loss == "sigmoid":
-                loss = tf.keras.losses.BinaryFocalCrossentropy(gamma=focal_loss_gamma)
-            elif multilabel_loss == "softmax":
+            if args.loss == "sigmoid":
+                loss = tf.keras.losses.BinaryFocalCrossentropy(gamma=args.focal_loss_gamma)
+            elif args.loss == "softmax":
                 loss=tf.keras.losses.CategoricalCrossentropy()
             metrics = f1score
         else:
             loss=tf.keras.losses.SparseCategoricalCrossentropy()
             metrics=tf.keras.metrics.SparseCategoricalAccuracy()
 
-        if decay:
-            learning_rate_fn = tf.optimizers.schedules.CosineDecay(learning_rate, training_batches * (epochs - 1))
+        if args.learning_rate_decay:
+            learning_rate_fn = tf.optimizers.schedules.CosineDecay(args.learning_rate, training_batches * (args.epochs - args.warmup_epochs))
         else:
-            learning_rate_fn = lambda _: learning_rate
+            learning_rate_fn = lambda _: args.learning_rate
 
         self._model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=LinearWarmup(training_batches, learning_rate_fn)),
+            optimizer=tf.keras.optimizers.Adam(learning_rate=LinearWarmup(training_batches * args.warmup_epochs, learning_rate_fn)),
             loss=loss, metrics=metrics)
 
 
     def load_checkpoint(self, dirname):
         """Loads model from directory.
 
-        Loads checkpoint called "checkpoint" from directory "dirname".
+        Loads checkpoint from directory "dirname".
 
         Receives Input:
             dirname: Path to directory (string).
         """
 
-        print("Loading fine-tuned cosine checkpoint from directory {}".format(dirname), file=sys.stderr, flush=True)
-        self._model.load_weights("{}/checkpoint".format(dirname))
+        print("Loading checkpoint from directory {}".format(dirname), file=sys.stderr, flush=True)
+        self._model.load_weights("{}/{}".format(dirname, self._checkpoint_filename))
         print("Model loaded.", file=sys.stderr, flush=True)
 
 
     def save_checkpoint(self, dirname):
         """Saves checkpoint to directory.
-        
-        Saves checkpoint called "checkpoint" to directory "dirname".
+
+        Saves checkpoint to directory "dirname".
         Recursively creates directory if "dirname" path does not exist.
 
         Receives Input:
@@ -138,8 +128,8 @@ class SynSemClassClassifierNN:
             print("Creating directory {}".format(dirname), file=sys.stderr, flush=True)
             os.makedirs(dirname)
 
-        print("Saving fine-tuned checkpoint to directory {}".format(dirname), file=sys.stderr, flush=True)
-        self._model.save_weights("{}/checkpoint".format(dirname))
+        print("Saving checkpoint to directory {}".format(dirname), file=sys.stderr, flush=True)
+        self._model.save_weights("{}/{}".format(dirname, self._checkpoint_filename))
 
 
     def train(self, tf_train_dataset, tf_dev_dataset, epochs=10, logdir=None):

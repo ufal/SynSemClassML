@@ -35,6 +35,7 @@ if __name__ == "__main__":
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch_size", default=10, type=int, help="Batch size.")
+    parser.add_argument("--checkpoint_filename", default="checkpoint.h5", type=str, help="Checkpoint filename.")
     parser.add_argument("--load_model", default=None, type=str, help="Load model from directory.")
     parser.add_argument("--multilabel_nbest", default=None, type=int, help="Take N best classes from multilabel class prediction (exclusive with --multilabel_threshold).")
     parser.add_argument("--multilabel_threshold", default=None, type=float, help="Threshold for multilabel class prediction (exclusive with --multilabel_nbest).")
@@ -47,10 +48,10 @@ if __name__ == "__main__":
 
     # Read data
     TESTDATA_STR="""
-,synsemclass,synsemclass_id,lemma,frame,index,sentence
-7,"prozkoumat (v-w4633f1),uvážit (v-w7429f1)","vec00090,vec00149",examine,ev-w1213f1,7,"As a result, he said he will ^ examine the Marcos documents sought by the prosecutors to determine whether turning over the filings is self-incrimination."
-8,prozkoumat (v-w4633f1),vec00090,examine,ev-w1213f1,23,"While there have been no reports of similar sudden unexplained deaths among diabetics in the U.S., Dr. Sobel said the FDA plans to ^ examine Dr. Toseland's evidence and is considering its own study here."
-12,prozkoumat (v-w4633f1),vec00090,explore,ev-w1249f1,9,"Finally, there is one family movie that quite eloquently ^ explores the depth of human emotion -- only its stars are bears."
+,synsemclass,synsemclass_id,lang,lemma,frame,index,sentence
+13100,end (ev-w1142f2),vec00113,eng,expire,ev-w1245f1,5,"The offer is scheduled to ^ expire on Nov. 28, unless extended."
+13101,end (ev-w1142f2),vec00113,eng,expire,ev-w1245f1,10,"Wasserstein Perella&Co. is the dealer-manager for the offer, which will ^ expire Nov. 29, unless extended ."
+13103,end (ev-w1142f2),vec00113,eng,expire,ev-w1245f1,4,The current debt limit ^ expires Oct. 31.
 """
 
     data = pd.read_csv(io.StringIO(TESTDATA_STR))
@@ -77,18 +78,9 @@ if __name__ == "__main__":
         tf.data.experimental.dense_to_ragged_batch(batch_size=args.batch_size))
 
     # Instantiate and compile the model
-    model = synsemclass_classifier_nn.SynSemClassClassifierNN(multilabel=model_training_args.multilabel)
-    model.compile(len(le.classes_),
-              bert=model_training_args.bert,
-              decay=model_training_args.learning_rate_decay,
-              dropout=model_training_args.dropout,
-              epochs=model_training_args.epochs,
-              focal_loss_gamma=model_training_args.focal_loss_gamma,
-              learning_rate=model_training_args.learning_rate,
-              multilabel_loss=model_training_args.multilabel_loss,
-              nbest=model_training_args.multilabel_nbest,
-              threshold=model_training_args.multilabel_threshold,
-              training_batches=0)
+    model = synsemclass_classifier_nn.SynSemClassClassifierNN(multilabel=model_training_args.multilabel,
+                                                              checkpoint_filename=args.checkpoint_filename)
+    model.compile(len(le.classes_), model_training_args)
     model.load_checkpoint(args.load_model)
 
     # Predict classes on development data

@@ -1,5 +1,5 @@
-sklearn
+scikit-learn
 pandas
-tensorflow>=2.8.0
+tensorflow>=2.8.0,<=2.10
 tensorflow-addons
 transformers
