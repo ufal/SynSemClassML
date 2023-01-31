@@ -133,7 +133,8 @@ if __name__ == "__main__":
     del logargs["save_model"]
     del logargs["test"]
     del logargs["test_predictions"]
-    del logargs["train"]
+    if args.train:
+        logargs["train"] = os.path.basename(args.train)
     logargs["bert"] = logargs["bert"].split("/")[-1]  # only name (clashed with directories)
     args.logdir = os.path.join(args.logdir, "{}-{}-{}".format(
                 os.path.basename(globals().get("__file__", "notebook")),
