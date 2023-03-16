@@ -87,7 +87,11 @@ class SynSemClassClassifierNN:
                 loss=tf.keras.losses.CategoricalCrossentropy()
             metrics = f1score
         else:
-            loss=tf.keras.losses.SparseCategoricalCrossentropy()
+            if args.loss == "sigmoid":
+                # Make our own SparseBinaryFocalCrossEntropy
+                loss=lambda y_t, y_p: tf.keras.losses.BinaryFocalCrossentropy(gamma=args.focal_loss_gamma)(tf.one_hot(y_t, output_layer_dim, axis=1), y_p)
+            elif args.loss == "softmax":
+                loss=tf.keras.losses.SparseCategoricalCrossentropy()
             metrics=tf.keras.metrics.SparseCategoricalAccuracy()
 
         if args.learning_rate_decay:
