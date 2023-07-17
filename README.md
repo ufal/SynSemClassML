@@ -1,8 +1,7 @@
 # Machine Learning for the SynSemClass project
 
 This repository contains code for machine learning for the SynSemClass project.
-It also accompanies the paper Extending an Event-type Ontology: Adding Verbs and Classes
-using Fine-tuned LLMs Suggestions accepted to the 17th Linguistic Annotation Workshop (LAW-XVII) @ ACL 2023.
+It also accompanies [Extending an Event-type Ontology: Adding Verbs and Classes using Fine-tuned LLMs Suggestions](https://aclanthology.org/2023.law-1.9/).
 
 The SynSemClass ontology itself is described here:
 
@@ -64,11 +63,25 @@ Merge the buckets into one file with ``merge_buckets.py``.
 
 ## How to Cite
 
-Please cite the publication Extending an Event-type Ontology: Adding Verbs and
-Classes using Fine-tuned LLMs Suggestions accepted to the 17th Linguistic
-Annotation Workshop (LAW-XVII) @ ACL 2023.
+Please cite [Extending an Event-type Ontology: Adding Verbs and Classes using Fine-tuned LLMs Suggestions](https://aclanthology.org/2023.law-1.9/):
 
-We will add the link and BibTex upon publication.
+```
+@inproceedings{strakova-etal-2023-extending,
+    title = "Extending an Event-type Ontology: Adding Verbs and Classes Using Fine-tuned {LLM}s Suggestions",
+    author = "Strakov{\'a}, Jana  and
+      Fu{\v{c}}{\'\i}kov{\'a}, Eva  and
+      Haji{\v{c}}, Jan  and
+      Ure{\v{s}}ov{\'a}, Zde{\v{n}}ka",
+    booktitle = "Proceedings of the 17th Linguistic Annotation Workshop (LAW-XVII)",
+    month = jul,
+    year = "2023",
+    address = "Toronto, Canada",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2023.law-1.9",
+    pages = "85--95",
+    abstract = "In this project, we have investigated the use of advanced machine learning methods, specifically fine-tuned large language models, for pre-annotating data for a lexical extension task, namely adding descriptive words (verbs) to an existing (but incomplete, as of yet) ontology of event types. Several research questions have been focused on, from the investigation of a possible heuristics to provide at least hints to annotators which verbs to include and which are outside the current version of the ontology, to the possible use of the automatic scores to help the annotators to be more efficient in finding a threshold for identifying verbs that cannot be assigned to any existing class and therefore they are to be used as seeds for a new class. We have also carefully examined the correlation of the automatic scores with the human annotation. While the correlation turned out to be strong, its influence on the annotation proper is modest due to its near linearity, even though the mere fact of such pre-annotation leads to relatively short annotation times.",
+}
+```
 
 ## Contact
 
