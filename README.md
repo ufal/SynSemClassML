@@ -40,10 +40,7 @@ venv/bin/pip3 install -r requirements.txt
 
 The model can be fine-tuned from scratch with the ``classifier.py`` script.
 
-The hyperparameters used for our experiments are described in the paper
-Extending an Event-type Ontology: Adding Verbs and Classes using Fine-tuned LLMs
-Suggestions accepted to the 17th Linguistic Annotation Workshop (LAW-XVII) @ ACL
-2023.
+The hyperparameters used for our experiments are described in [Extending an Event-type Ontology: Adding Verbs and Classes using Fine-tuned LLMs Suggestions](https://aclanthology.org/2023.law-1.9/).
 
 ## SynSemClass Prediction
 
