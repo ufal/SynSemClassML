@@ -26,7 +26,7 @@ The software has been developed and tested on Linux. It is possible to run the c
 1. Clone the repository:
 
 ```sh
-git clone https://github.com/strakova/synsemclass_ml
+git clone https://github.com/ufal/SynSemClassML
 ```
 
 2. Create the Python virtual environment:
@@ -82,5 +82,4 @@ Please cite [Extending an Event-type Ontology: Adding Verbs and Classes using Fi
 
 ## Contact
 
-Jana Straková
-strakova@ufal.mff.cuni.cz
+Jana Straková `strakova@ufal.mff.cuni.cz`
