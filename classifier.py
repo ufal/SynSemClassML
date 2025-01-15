@@ -91,7 +91,7 @@ if __name__ == "__main__":
     parser.add_argument("--bert", default="bert-base-multilingual-uncased", type=str, help="BERT transformers model (default: bert-base-multilingual-uncased).")
     parser.add_argument("--checkpoint_filename", default="checkpoint.h5", type=str, help="Checkpoint filename.")
     parser.add_argument("--column_x", default="sentence", type=str, help="CSV column with the (input) variable X. Expecting a sentence (string) with the mention introduced by special token ^.")
-    parser.add_argument("--column_y", default="synsemclass_id", type=str, help="CSV column with (output, predicted target) variable Y. Expecting a SynSemClass id or name (string).")
+    parser.add_argument("--column_y", default="synsemclass_id", type=str, help="CSV column with (output, predicted target) variable Y. Expecting a SynSemClass id in the column.")
     parser.add_argument("--dev", default=None, type=str, help="Dev data.")
     parser.add_argument("--dev_predictions", default=None, type=str, help="Dev predictions filename.")
     parser.add_argument("--dev_size", default=None, type=int, help="Limit dev size.")
@@ -103,6 +103,7 @@ if __name__ == "__main__":
     parser.add_argument("--load_model", default=None, type=str, help="Load model from directory.")
     parser.add_argument("--logdir", default="logs", type=str, help="Logdir.")
     parser.add_argument("--loss", default="sigmoid", type=str, help="Loss (default: sigmoid).")
+    parser.add_argument("--max_sentence_len", default=120, type=int, help="Maximum sentence length, trim sentences to this number of words.")
     parser.add_argument("--multilabel", default=False, action="store_true", help="Multilabel classification.")
     parser.add_argument("--multilabel_nbest", default=None, type=int, help="Take N best classes from multilabel class prediction (exclusive with --multilabel_threshold).")
     parser.add_argument("--multilabel_threshold", default=None, type=float, help="Threshold for multilabel class prediction (exclusive with --multilabel_nbest).")
@@ -202,8 +203,26 @@ if __name__ == "__main__":
 
     def create_dataset(data, size, shuffle=True):
         """Creates TensorFlow dataset as input to SynSemClassClassifierNN."""
+        # TODO: pass max_sentence_len as argument
 
-        inputs = tokenizer(data[args.column_x].tolist())["input_ids"] # drop masks
+        def trim(sentences, length):
+            """Trims all sentences in the list to maximum length."""
+            trimmed_sentences = []
+            n_trimmed = 0
+            for sentence in sentences:
+                words = sentence.split(" ")
+                trimmed_words = words[:length]
+                trimmed_sentence = " ".join(trimmed_words)
+                if len(words) > length:
+                    n_trimmed += 1
+                    print("Sentence trimmed from length {}:\n{}\nto length {}:\n{}".format(len(words), sentence, len(trimmed_words), trimmed_sentence), file=sys.stderr)
+                trimmed_sentences.append(trimmed_sentence)
+            print("Number of sentences trimmed to {} words: {}".format(length, n_trimmed), file=sys.stderr)
+            return trimmed_sentences
+
+        sentences = trim(data[args.column_x].tolist(), args.max_sentence_len)
+
+        inputs = tokenizer(sentences)["input_ids"] # drop masks
         inputs = tf.ragged.constant(inputs)
 
         # output layer

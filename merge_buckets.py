@@ -37,15 +37,31 @@ if __name__ == "__main__":
                         default=None,
                         type=str,
                         help="Examples CSV file to extract class names (optional).")
+    parser.add_argument("--langs_priority",
+                        type=str,
+                        default="ces,eng,spa,deu",
+                        help="Preferred order of allowed languages in class names displayed.")
     parser.add_argument("--output", default="all_buckets_2753494.txt", type=str, help="All merged buckets.")
     args=parser.parse_args()
 
+    langs_priority_dict = dict()
+    for i, lang in enumerate(args.langs_priority.split(",")):
+        langs_priority_dict[lang] = i
+
     if args.examples:
         classes = dict()
+        classes_langs = dict()
         with open(args.examples, "r", encoding="utf-8") as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                classes[row["synsemclass_id"]] = row["synsemclass"]
+                lang = row["lang"]
+                if lang not in langs_priority_dict:
+                    continue
+
+                class_id = row["synsemclass_id"]
+                if class_id not in classes or langs_priority_dict[lang] < langs_priority_dict[classes_langs[class_id]]:
+                    classes[class_id] = row["synsemclass"]
+                    classes_langs[class_id] = lang
 
     lines = dict()
     for bucket in args.buckets.split(","):
@@ -54,7 +70,7 @@ if __name__ == "__main__":
                 line = line.rstrip()
                 cols = line.split("\t")
                 for i in range(3, len(cols), 2):
-                    if args.examples:
+                    if args.examples and cols[i] in classes:
                         cols[i] = "{} / {}".format(cols[i], classes[cols[i]])
                 line = "\t".join(cols)
                 lines[line] = float(cols[2])

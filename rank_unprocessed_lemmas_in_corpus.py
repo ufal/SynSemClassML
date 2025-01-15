@@ -13,9 +13,6 @@ Given a fine-tuned LLM classifier on a (partially) annotated ontology, sorts
 yet unprocessed lemmas in large raw corpus from highest to lowest scored and
 prints top k scored classes for each lemma.
 
-Lemmas are sorted into frequency buckets and printed to separate TXT files.
-Merge the buckets into one file with merge_buckets.py.
-
 Input:
     --lemmas: A CSV file with one column, a lemma per line (really just a TXT
               file with lemmas).
@@ -110,20 +107,31 @@ if __name__ == "__main__":
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_training_args.bert)
 
     # Read list of unprocessed lemmas to classify
-    lemmas = dict()
+    lemma_counts = dict()
     with open(args.lemmas, "r", encoding="utf-8") as fr:
         for line in fr.readlines():
             line = line.rstrip()
-            lemmas[line] = 0
+
+            # Lemma is in the first column, ignore any other columns
+            lemma = line.split("\t")[0]
+
+            if lemma.find("_") != -1:
+                old_lemma = lemma
+                lemma = lemma.replace("_", " ")
+                print("Replaced underscored in lemma from lemma \"{}\" to lemma \"{}\"".format(old_lemma, lemma), file=sys.stderr)
+
+            lemma_counts[lemma] = 0
 
     # Walk through the corpus sentences and classify unprocessed lemmas
     nlines = 0
     batch_lemmas, batch_sentences = [], []
     nbatches = 0
     lemma_class_avgs = dict()
+
     # Initialize lemma_class_avgs with zero numpy arrays of size le.classes_
-    for lemma in lemmas:
+    for lemma in lemma_counts:
         lemma_class_avgs[lemma] = np.zeros(len(le.classes_))
+
     with open(args.corpus_lemmas, "r", encoding="utf-8") as fr_lemmas:
         with open(args.corpus_forms, "r", encoding="utf-8") as fr_forms:
             line_lemmas = fr_lemmas.readline()
@@ -140,7 +148,7 @@ if __name__ == "__main__":
 
                 line_lemmas = line_lemmas.rstrip()
                 line_forms = line_forms.rstrip()
-                for lemma in lemmas:
+                for lemma in lemma_counts:
                     lemma_tokens = lemma.split(" ")
                     tokens = line_lemmas.split(" ")
                     forms = line_forms.split(" ")
@@ -160,7 +168,7 @@ if __name__ == "__main__":
                             all_found = False
                             break
                     if all_found:
-                        lemmas[lemma] += 1
+                        lemma_counts[lemma] += 1
                         forms.insert(lemma_index, SPECIAL_TOKEN)
                         sentence = " ".join(forms)
 
@@ -189,10 +197,10 @@ if __name__ == "__main__":
         for i, batch_lemma in enumerate(batch_lemmas):
             lemma_class_avgs[batch_lemma] += scores[i]
 
-    # Compute averages by dividing lemma_class_avgs by lemmas (counts)
+    # Compute averages by dividing lemma_class_avgs by lemma counts.
     for lemma in lemma_class_avgs:
-        if lemmas[lemma] != 0:
-            lemma_class_avgs[lemma] /= lemmas[lemma]
+        if lemma_counts[lemma] != 0:
+            lemma_class_avgs[lemma] /= lemma_counts[lemma]
 
     # Compute indices of top k highest scores classes for each lemma.
     top_k = dict()
@@ -201,12 +209,12 @@ if __name__ == "__main__":
 
     # Sort lemmas into buckets by frequency
     buckets = [dict() for _ in range(len(BUCKET_LIMITS))]
-    for lemma in lemmas:
-        if lemmas[lemma] == 0:
+    for lemma in lemma_counts:
+        if lemma_counts[lemma] == 0:
             continue
 
         for i in range(len(BUCKET_LIMITS)):
-            if lemmas[lemma] <= BUCKET_LIMITS[i]:
+            if lemma_counts[lemma] <= BUCKET_LIMITS[i]:
                 buckets[i][lemma] = np.average(top_k[lemma])
                 highest_class_index = np.argmax(lemma_class_avgs[lemma])
                 break
@@ -220,4 +228,4 @@ if __name__ == "__main__":
                 for index in sorted_lemma_class_avgs[:10]:
                     highest_classes.append(le.classes_[index])
                     highest_classes.append("{:.5f}".format(lemma_class_avgs[lemma][index]))
-                print("{}\t{}\t{:.5f}\t{}".format(lemma, lemmas[lemma], avg, "\t".join(highest_classes)), file=fw)
+                print("{}\t{}\t{:.5f}\t{}".format(lemma, lemma_counts[lemma], avg, "\t".join(highest_classes)), file=fw)
