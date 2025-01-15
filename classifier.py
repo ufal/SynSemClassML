@@ -146,7 +146,7 @@ if __name__ == "__main__":
     # Create logdir
     if not os.path.exists(args.logdir):
         print("Making logdir {}".format(args.logdir), file=sys.stderr, flush=True)
-        os.mkdir(args.logdir)
+        os.makedirs(args.logdir, exist_ok=True)
 
     # Set random seed and threads globally
     np.random.seed(args.seed)
