@@ -216,7 +216,6 @@ if __name__ == "__main__":
         for i in range(len(BUCKET_LIMITS)):
             if lemma_counts[lemma] <= BUCKET_LIMITS[i]:
                 buckets[i][lemma] = np.average(top_k[lemma])
-                highest_class_index = np.argmax(lemma_class_avgs[lemma])
                 break
 
     # In each bucket, sort lemmas from least scored to highest scored.
