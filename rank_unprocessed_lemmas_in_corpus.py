@@ -36,6 +36,7 @@ Example Usage:
 """
 
 
+import csv
 import pickle
 import sys
 
@@ -48,14 +49,6 @@ import synsemclass_classifier_nn
 
 # A token that marks the position of the lemma of interest
 SPECIAL_TOKEN = "^"
-
-# Lemmas are sorted into buckets by frequency and printed to separate TXT
-# files. We were hoping to prioritize somehow by frequency but we ended up just
-# using one merged file of all lemmas. Merge the buckets into one file with
-# merge_buckets.py.
-INFINITY = 999999
-#BUCKET_LIMITS = [3, 8, 17, 40, INFINITY]    # for 275349 sentences
-BUCKET_LIMITS = [16, 49, 122, 312, INFINITY]    # for 2753494 sentences
 
 
 def score_sentences(model, sentences):
@@ -81,9 +74,11 @@ if __name__ == "__main__":
     parser.add_argument("--corpus_lemmas", default="syn_v4.lemmas", type=str, help="Corpus sentences with lemmas, one sentence per line.")
     parser.add_argument("--corpus_forms", default="syn_v4.forms", type=str, help="Corpus sentences with forms, one sentence per line.")
     parser.add_argument("--lemmas", default="pdt_lemmas_nezarazene.csv", type=str, help="Unprocessed lemmas to count in the corpus.")
+    parser.add_argument("--examples", default=None, type=str, help="Examples CSV file to extract SynSemClass class names (optional).")
+    parser.add_argument("--langs_priority", default="ces,eng,spa,deu", type=str, help="Preferred order of allowed languages in SynSemClass class names displayed.")
     parser.add_argument("--load_model", default=None, type=str, help="Load model from directory.")
     parser.add_argument("--max_lines", default=10, type=int, help="Maximum corpus lines to process.")
-    parser.add_argument("--output", default="bucket", type=str, help="Output file template.")
+    parser.add_argument("--output", default="lemma_suggestions.txt", type=str, help="Output file template.")
     parser.add_argument("--threads", default=1, type=int, help="Maximum number of threads to use.")
     parser.add_argument("--k", default=1, type=int, help="Top k classes.")
     args=parser.parse_args()
@@ -91,6 +86,26 @@ if __name__ == "__main__":
     # Set threads
     tf.config.threading.set_inter_op_parallelism_threads(args.threads)
     tf.config.threading.set_intra_op_parallelism_threads(args.threads)
+
+    # Read SynSemClass classes names
+    langs_priority_dict = dict()
+    for i, lang in enumerate(args.langs_priority.split(",")):
+        langs_priority_dict[lang] = i
+
+    if args.examples:
+        classes = dict()
+        classes_langs = dict()
+        with open(args.examples, "r", encoding="utf-8") as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                lang = row["lang"]
+                if lang not in langs_priority_dict:
+                    continue
+
+                class_id = row["synsemclass_id"]
+                if class_id not in classes or langs_priority_dict[lang] < langs_priority_dict[classes_langs[class_id]]:
+                    classes[class_id] = row["synsemclass"]
+                    classes_langs[class_id] = lang
 
     # Load model
     print("Loading model from \'{}\'".format(args.load_model), file=sys.stderr, flush=True)
@@ -202,29 +217,21 @@ if __name__ == "__main__":
         if lemma_counts[lemma] != 0:
             lemma_class_avgs[lemma] /= lemma_counts[lemma]
 
-    # Compute indices of top k highest scores classes for each lemma.
+    # Compute averages of top k highest scored classes for each lemma.
     top_k = dict()
     for lemma in lemma_class_avgs:
-        top_k[lemma] = np.partition(lemma_class_avgs[lemma], -args.k)[-args.k:]
+        if lemma_counts[lemma] != 0:
+            top_k[lemma] = np.average(np.partition(lemma_class_avgs[lemma], -args.k)[-args.k:])
 
-    # Sort lemmas into buckets by frequency
-    buckets = [dict() for _ in range(len(BUCKET_LIMITS))]
-    for lemma in lemma_counts:
-        if lemma_counts[lemma] == 0:
-            continue
-
-        for i in range(len(BUCKET_LIMITS)):
-            if lemma_counts[lemma] <= BUCKET_LIMITS[i]:
-                buckets[i][lemma] = np.average(top_k[lemma])
-                break
-
-    # In each bucket, sort lemmas from least scored to highest scored.
-    for i, bucket in enumerate(buckets):
-        with open("{}_{}_freq_to_{}.txt".format(args.output, i+1, BUCKET_LIMITS[i]), "w", encoding="utf-8") as fw:
-            for lemma, avg in sorted(buckets[i].items(), key=lambda x: x[1]):
-                highest_classes = []
-                sorted_lemma_class_avgs = np.argsort(lemma_class_avgs[lemma])[::-1]
-                for index in sorted_lemma_class_avgs[:10]:
-                    highest_classes.append(le.classes_[index])
-                    highest_classes.append("{:.5f}".format(lemma_class_avgs[lemma][index]))
-                print("{}\t{}\t{:.5f}\t{}".format(lemma, lemma_counts[lemma], avg, "\t".join(highest_classes)), file=fw)
+    # Sort lemmas from least scored to highest scored in their top k classes.
+    with open(args.output, "w", encoding="utf-8") as fw:
+        for lemma, avg in sorted(top_k.items(), key=lambda x: x[1]):
+            highest_classes_to_print = []
+            sorted_lemma_class_avgs = np.argsort(lemma_class_avgs[lemma])[::-1]
+            for index in sorted_lemma_class_avgs[:10]:
+                synsemclass = le.classes_[index]
+                if args.examples and synsemclass in classes:
+                    synsemclass = "{} / {}".format(synsemclass, classes[synsemclass])
+                highest_classes_to_print.append(synsemclass)
+                highest_classes_to_print.append("{:.5f}".format(lemma_class_avgs[lemma][index]))
+            print("{}\t{}\t{:.5f}\t{}".format(lemma, lemma_counts[lemma], avg, "\t".join(highest_classes_to_print)), file=fw)
