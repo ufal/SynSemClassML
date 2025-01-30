@@ -172,6 +172,10 @@ if __name__ == "__main__":
                     all_found = True
                     lemma_index = None
                     for i, lemma_token in enumerate(lemma_tokens):
+                        # UDPipe tokenizes "si" as "se" in the SYN v4 corpus:
+                        if lemma_token == "si":
+                            lemma_token = "se"
+
                         found = False
                         for j, token in enumerate(tokens):
                             if lemma_token == token:
