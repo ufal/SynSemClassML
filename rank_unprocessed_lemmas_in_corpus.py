@@ -78,7 +78,7 @@ if __name__ == "__main__":
     parser.add_argument("--langs_priority", default="ces,eng,spa,deu", type=str, help="Preferred order of allowed languages in SynSemClass class names displayed.")
     parser.add_argument("--load_model", default=None, type=str, help="Load model from directory.")
     parser.add_argument("--max_lines", default=10, type=int, help="Maximum corpus lines to process.")
-    parser.add_argument("--max_frequency", default=1000, type=int, help="Maximum number of lemma mentions to consider.")
+    parser.add_argument("--max_frequency", default=5000, type=int, help="Maximum number of lemma mentions to consider.")
     parser.add_argument("--output", default="lemma_suggestions.txt", type=str, help="Output file template.")
     parser.add_argument("--threads", default=1, type=int, help="Maximum number of threads to use.")
     parser.add_argument("--k", default=1, type=int, help="Top k classes.")
