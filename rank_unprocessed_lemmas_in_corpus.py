@@ -78,6 +78,7 @@ if __name__ == "__main__":
     parser.add_argument("--langs_priority", default="ces,eng,spa,deu", type=str, help="Preferred order of allowed languages in SynSemClass class names displayed.")
     parser.add_argument("--load_model", default=None, type=str, help="Load model from directory.")
     parser.add_argument("--max_lines", default=10, type=int, help="Maximum corpus lines to process.")
+    parser.add_argument("--max_frequency", default=1000, type=int, help="Maximum number of lemma mentions to consider.")
     parser.add_argument("--output", default="lemma_suggestions.txt", type=str, help="Output file template.")
     parser.add_argument("--threads", default=1, type=int, help="Maximum number of threads to use.")
     parser.add_argument("--k", default=1, type=int, help="Top k classes.")
@@ -142,6 +143,7 @@ if __name__ == "__main__":
     batch_lemmas, batch_sentences = [], []
     nbatches = 0
     lemma_class_avgs = dict()
+    reached_max_frequency = dict()
 
     # Initialize lemma_class_avgs with zero numpy arrays of size le.classes_
     for lemma in lemma_counts:
@@ -164,6 +166,13 @@ if __name__ == "__main__":
                 line_lemmas = line_lemmas.rstrip()
                 line_forms = line_forms.rstrip()
                 for lemma in lemma_counts:
+                    # Stop classifying too frequent lemmas
+                    if lemma_counts[lemma] >= args.max_frequency:
+                        if lemma not in reached_max_frequency:
+                            print("Lemma \"{}\" reached maximum frequency {}, stopping classification for this lemma".format(lemma, args.max_frequency), file=sys.stderr)
+                            reached_max_frequency[lemma] = 1
+                        continue
+
                     lemma_tokens = lemma.split(" ")
                     tokens = line_lemmas.split(" ")
                     forms = line_forms.split(" ")
