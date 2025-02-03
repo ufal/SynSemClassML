@@ -119,7 +119,7 @@ if __name__ == "__main__":
                     classes_langs[class_id] = lang
 
     # Load model
-    print("Loading model from \'{}\'".format(args.load_model), file=sys.stderr, flush=True)
+    print("Loading model from \'{}\'".format(args.load_model), flush=True)
     with open("{}/args.pickle".format(args.load_model), "rb") as pickle_file:
         model_training_args = pickle.load(pickle_file)
     with open("{}/classes.pickle".format(args.load_model), "rb") as pickle_file:
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     model.load_checkpoint(args.load_model)
 
     # Load the tokenizer
-    print("Loading tokenizer {}".format(model_training_args.bert), file=sys.stderr, flush=True)
+    print("Loading tokenizer {}".format(model_training_args.bert), flush=True)
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_training_args.bert)
 
     # Read list of unprocessed lemmas to classify
@@ -144,7 +144,7 @@ if __name__ == "__main__":
             if lemma.find("_") != -1:
                 old_lemma = lemma
                 lemma = lemma.replace("_", " ")
-                print("Replaced underscored in lemma from lemma \"{}\" to lemma \"{}\"".format(old_lemma, lemma), file=sys.stderr)
+                print("Replaced underscored in lemma from lemma \"{}\" to lemma \"{}\"".format(old_lemma, lemma))
 
             lemma_counts[lemma] = 0
 
@@ -171,10 +171,10 @@ if __name__ == "__main__":
 
                 # Exit conditions
                 if args.max_lines and nlines > args.max_lines:
-                    print("Maximum number of lines --max_lines={} reached, finishing.".format(args.max_lines))
+                    print("Maximum number of lines --max_lines={} reached, finishing".format(args.max_lines))
                     break
                 elif args.max_hours and time.time() - start_time > max_runtime:
-                    print("Maximum number of hours --max_hours={} reached, finishing.".format(args.max_hours))
+                    print("Maximum number of hours --max_hours={} reached, finishing".format(args.max_hours))
                     break
 
                 line_lemmas = line_lemmas.rstrip()
@@ -183,7 +183,7 @@ if __name__ == "__main__":
                     # Stop classifying too frequent lemmas
                     if lemma_counts[lemma] >= args.max_frequency:
                         if lemma not in reached_max_frequency:
-                            print("Lemma \"{}\" reached maximum frequency {}, stopping classification for this lemma".format(lemma, args.max_frequency), file=sys.stderr)
+                            print("Lemma \"{}\" reached maximum frequency {}, stopping classification for this lemma".format(lemma, args.max_frequency))
                             reached_max_frequency[lemma] = 1
                         continue
 
