@@ -204,7 +204,7 @@ class SynSemClassClassifierNN:
             return predicted_classes
 
 
-    def predict_values(self, tf_test_dataset):
+    def predict_values(self, tf_test_dataset, verbose=1):
         """Predicts test data classes probs/logits.
 
         Receives Input:
@@ -226,4 +226,4 @@ class SynSemClassClassifierNN:
 
         """
 
-        return self._model.predict(tf_test_dataset)
+        return self._model.predict(tf_test_dataset, verbose=verbose)

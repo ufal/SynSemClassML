@@ -63,7 +63,7 @@ def score_sentences(model, sentences):
     tf.data.experimental.dense_to_ragged_batch(batch_size=args.batch_size))
 
     # Predict classes
-    return model.predict_values(tf_dataset)
+    return model.predict_values(tf_dataset, verbose=0)
 
 
 if __name__ == "__main__":
