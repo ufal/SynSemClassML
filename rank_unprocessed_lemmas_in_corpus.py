@@ -167,7 +167,7 @@ if __name__ == "__main__":
             while line_lemmas:
 
                 if nlines % 1000 == 0:
-                    print("Lines counted: {}".format(nlines), file=sys.stderr, flush=True)
+                    print("Lines counted: {}".format(nlines), flush=True)
 
                 # Exit conditions
                 if args.max_lines and nlines > args.max_lines:
@@ -222,7 +222,7 @@ if __name__ == "__main__":
 
                             nbatches += 1
                             if nbatches % 10 == 0:
-                                print("Batches of size {} classified: {}".format(args.batch_size, nbatches), file=sys.stderr, flush=True)
+                                print("Batches of size {} classified: {}".format(args.batch_size, nbatches), flush=True)
 
                             # Clear batch
                             batch_lemmas, batch_sentences = [], []
