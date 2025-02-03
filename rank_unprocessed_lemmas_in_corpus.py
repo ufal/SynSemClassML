@@ -78,6 +78,7 @@ if __name__ == "__main__":
     parser.add_argument("--k", default=1, type=int, help="Top k classes.")
     parser.add_argument("--langs_priority", default="ces,eng,spa,deu", type=str, help="Preferred order of allowed languages in SynSemClass class names displayed.")
     parser.add_argument("--lemmas", default="pdt_lemmas_nezarazene.csv", type=str, help="Unprocessed lemmas to count in the corpus.")
+    parser.add_argument("--lemma_column", default=0, type=int, help="Column number with lemma on a tab separated line, counts from 0.")
     parser.add_argument("--load_model", default=None, type=str, help="Load model from directory.")
     parser.add_argument("--max_hours", default=None, type=int, help="Maximum hours to process for.")
     parser.add_argument("--max_frequency", default=5000, type=int, help="Maximum number of lemma mentions to consider.")
@@ -139,7 +140,7 @@ if __name__ == "__main__":
             line = line.rstrip()
 
             # Lemma is in the first column, ignore any other columns
-            lemma = line.split("\t")[0]
+            lemma = line.split("\t")[args.lemma_column]
 
             if lemma.find("_") != -1:
                 old_lemma = lemma
