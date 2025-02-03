@@ -262,3 +262,11 @@ if __name__ == "__main__":
                 highest_classes_to_print.append(synsemclass)
                 highest_classes_to_print.append("{:.5f}".format(lemma_class_avgs[lemma][index]))
             print("{}\t{}\t{:.5f}\t{}".format(lemma, lemma_counts[lemma], avg, "\t".join(highest_classes_to_print)), file=fw)
+
+    # Print some stats
+    nlemmas = len(lemma_counts)
+    found = len(top_k)
+    not_found = nlemmas - found
+    print("Processed {} lines of the corpus".format(nlines))
+    print("Lemmas found in the corpus:\t{} / {} ({:.2f}\%)".format(found, nlemmas, found * 100 / nlemmas))
+    print("Lemmas not found in the corpus:\t{} / {} ({:.2f}\%)".format(not_found, nlemmas, not_found * 100 / nlemmas))
