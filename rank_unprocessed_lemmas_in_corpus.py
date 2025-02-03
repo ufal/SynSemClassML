@@ -39,6 +39,7 @@ Example Usage:
 import csv
 import pickle
 import sys
+import time
 
 import numpy as np
 import tensorflow as tf
@@ -77,12 +78,21 @@ if __name__ == "__main__":
     parser.add_argument("--examples", default=None, type=str, help="Examples CSV file to extract SynSemClass class names (optional).")
     parser.add_argument("--langs_priority", default="ces,eng,spa,deu", type=str, help="Preferred order of allowed languages in SynSemClass class names displayed.")
     parser.add_argument("--load_model", default=None, type=str, help="Load model from directory.")
-    parser.add_argument("--max_lines", default=10, type=int, help="Maximum corpus lines to process.")
+    parser.add_argument("--max_hours", default=None, type=int, help="Maximum hours to process for.")
+    parser.add_argument("--max_lines", default=None, type=int, help="Maximum corpus lines to process.")
     parser.add_argument("--max_frequency", default=5000, type=int, help="Maximum number of lemma mentions to consider.")
     parser.add_argument("--output", default="lemma_suggestions.txt", type=str, help="Output file template.")
     parser.add_argument("--threads", default=1, type=int, help="Maximum number of threads to use.")
     parser.add_argument("--k", default=1, type=int, help="Top k classes.")
     args=parser.parse_args()
+
+    # Process arguments
+    if args.max_hours == None and args.max_lines == None:
+        raise ValueError("Either --max_hours or --max_lines must be set.")
+
+    if args.max_hours:
+        max_runtime = args.max_hours * 60 * 60  # time in seconds
+        start_time = time.time()
 
     # Set threads
     tf.config.threading.set_inter_op_parallelism_threads(args.threads)
@@ -159,8 +169,12 @@ if __name__ == "__main__":
                 if nlines % 1000 == 0:
                     print("Lines counted: {}".format(nlines), file=sys.stderr, flush=True)
 
-                if nlines > args.max_lines:
-                    print("Exceeded required maximum number of lines args.max_lines={}, finishing.".format(args.max_lines), file=sys.stderr)
+                # Exit conditions
+                if args.max_lines and nlines > args.max_lines:
+                    print("Maximum number of lines --max_lines={} reached, finishing.".format(args.max_lines))
+                    break
+                elif args.max_hours and time.time() - start_time > max_runtime:
+                    print("Maximum number of hours --max_hours={} reached, finishing.".format(args.max_hours))
                     break
 
                 line_lemmas = line_lemmas.rstrip()
