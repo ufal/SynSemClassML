@@ -267,6 +267,6 @@ if __name__ == "__main__":
     nlemmas = len(lemma_counts)
     found = len(top_k)
     not_found = nlemmas - found
-    print("Processed {} lines of the corpus".format(nlines))
+    print("Processed {} lines of the corpus".format(nlines - 1))
     print("Lemmas found in the corpus:\t{} / {} ({:.2f}\%)".format(found, nlemmas, found * 100 / nlemmas))
     print("Lemmas not found in the corpus:\t{} / {} ({:.2f}\%)".format(not_found, nlemmas, not_found * 100 / nlemmas))
